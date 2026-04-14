@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="TK Freezer">
+  <title>Tastee Kreme – Freezer Check</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue:#1565C0; --blue2:#1976D2; --lblue:#E3F2FD;
+      --green:#2e7d32; --lgreen:#E8F5E9;
+      --red:#c62828; --lred:#FFEBEE;
+      --orange:#E65100; --lorange:#FFF3E0;
+      --gray:#6b7280; --border:#e5e7eb; --bg:#f5f7fa;
+    }
+    body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); min-height:100vh; display:flex; flex-direction:column; align-items:center; }
+    .header { width:100%; background:var(--blue); color:white; padding:16px 20px; display:flex; align-items:center; gap:12px; box-shadow:0 2px 8px rgba(0,0,0,.2); }
+    .header-icon { font-size:2rem; }
+    .header-title { font-size:1.15rem; font-weight:700; }
+    .header-sub { font-size:.8rem; opacity:.85; }
+    .progress-bar { width:100%; height:4px; background:#bbdefb; }
+    .progress-fill { height:100%; background:#fff; transition:width .35s ease; }
+    .card { background:white; border-radius:16px; box-shadow:0 2px 16px rgba(0,0,0,.08); padding:28px 24px; width:100%; max-width:560px; margin:24px 16px; }
+    .step-label { font-size:.75rem; font-weight:700; letter-spacing:.08em; color:var(--blue); text-transform:uppercase; margin-bottom:6px; }
+    .card h2 { font-size:1.4rem; color:#1f2937; margin-bottom:6px; }
+    .card p { color:var(--gray); font-size:.95rem; margin-bottom:20px; line-height:1.5; }
+    label { display:block; font-size:.9rem; font-weight:600; color:#374151; margin-bottom:6px; }
+    .form-group { margin-bottom:18px; }
+    select, input[type="text"] { width:100%; padding:14px 16px; font-size:1rem; border:2px solid var(--border); border-radius:10px; background:white; color:#111; transition:border-color .2s; -webkit-appearance:none; }
+    select:focus, input:focus { outline:none; border-color:var(--blue2); }
+    .toggle-group { display:flex; background:var(--bg); border-radius:10px; padding:4px; margin-bottom:14px; border:2px solid var(--border); }
+    .toggle-btn { flex:1; padding:10px; border:none; border-radius:8px; background:transparent; font-size:.95rem; font-weight:600; color:var(--gray); cursor:pointer; transition:all .2s; }
+    .toggle-btn.active { background:var(--blue); color:white; box-shadow:0 1px 6px rgba(21,101,192,.3); }
+    .btn { display:block; width:100%; padding:16px; font-size:1.05rem; font-weight:700; border:none; border-radius:12px; cursor:pointer; transition:all .2s; text-align:center; }
+    .btn-primary { background:var(--blue); color:white; }
+    .btn-primary:active { background:#0d47a1; transform:scale(.98); }
+    .btn-primary:disabled { background:#9ca3af; cursor:not-allowed; }
+    .btn-secondary { background:var(--bg); color:var(--blue); border:2px solid var(--border); margin-top:10px; }
+    .camera-wrapper { display:flex; flex-direction:column; align-items:center; gap:16px; }
+    .camera-label { display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; min-height:200px; background:var(--lblue); border:3px dashed var(--blue2); border-radius:16px; cursor:pointer; gap:10px; transition:background .2s; }
+    .camera-label:active { background:#bbdefb; }
+    .camera-icon { font-size:3.5rem; }
+    .camera-label span { font-size:1rem; font-weight:700; color:var(--blue); }
+    .camera-label small { font-size:.8rem; color:var(--gray); }
+    #camera-input { display:none; }
+    #photo-preview { width:100%; max-height:340px; border-radius:14px; object-fit:cover; box-shadow:0 2px 12px rgba(0,0,0,.12); display:none; }
+    .retake-btn { font-size:.9rem; color:var(--blue); background:none; border:none; cursor:pointer; font-weight:600; padding:4px 0; text-decoration:underline; }
+    .loading-screen { display:flex; flex-direction:column; align-items:center; gap:20px; padding:40px 0; text-align:center; }
+    .spinner { width:56px; height:56px; border:5px solid var(--lblue); border-top-color:var(--blue); border-radius:50%; animation:spin 1s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .loading-screen h3 { font-size:1.15rem; color:#1f2937; }
+    .loading-screen p { font-size:.9rem; color:var(--gray); }
+    .result-banner { border-radius:14px; padding:20px; display:flex; align-items:center; gap:16px; margin-bottom:20px; }
+    .result-banner.ice     { background:var(--lred);    border:2px solid #ef9a9a; }
+    .result-banner.clean   { background:var(--lgreen);  border:2px solid #a5d6a7; }
+    .result-banner.unknown { background:var(--lorange); border:2px solid #ffcc80; }
+    .result-icon { font-size:2.8rem; }
+    .result-title { font-size:1.2rem; font-weight:700; }
+    .result-banner.ice     .result-title { color:var(--red);    }
+    .result-banner.clean   .result-title { color:var(--green);  }
+    .result-banner.unknown .result-title { color:var(--orange); }
+    .result-sub { font-size:.9rem; color:#374151; margin-top:4px; }
+    .detail-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); font-size:.92rem; }
+    .detail-row:last-child { border-bottom:none; }
+    .detail-label { color:var(--gray); font-weight:500; }
+    .detail-value { font-weight:600; color:#1f2937; text-align:right; max-width:60%; }
+    .severity-pill { display:inline-block; padding:3px 12px; border-radius:12px; font-size:.82rem; font-weight:700; }
+    .sev-none     { background:#dcfce7; color:#166534; }
+    .sev-light    { background:#fef9c3; color:#854d0e; }
+    .sev-moderate { background:#ffedd5; color:#9a3412; }
+    .sev-heavy    { background:#fee2e2; color:#991b1b; }
+    .sev-unknown  { background:#f3f4f6; color:#6b7280; }
+    .ai-notes { background:var(--bg); border-radius:10px; padding:14px; font-size:.88rem; color:#374151; line-height:1.55; margin:14px 0; border-left:4px solid var(--blue2); }
+    .step { display:none; }
+    .step.active { display:block; }
+  </style>
+</head>
+<body>
+<div class="header">
+  <div class="header-icon">🍦</div>
+  <div>
+    <div class="header-title">Tastee Kreme Houston</div>
+    <div class="header-sub">Freezer Inspection</div>
+  </div>
+</div>
+<div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:20%"></div></div>
+
+<div class="card">
+  <!-- Step 1: Zone & Rep -->
+  <div class="step active" id="step-1">
+    <div class="step-label">Step 1 of 4</div>
+    <h2>Select Your Zone</h2>
+    <p>Choose your assigned zone and enter your name to get started.</p>
+    <div class="form-group">
+      <label for="route-select">Your Zone</label>
+      <select id="route-select"><option value="">— Select a zone —</option></select>
+    </div>
+    <div class="form-group">
+      <label for="rep-name">Your Name <span style="font-weight:400;color:#9ca3af">(optional)</span></label>
+      <input type="text" id="rep-name" placeholder="e.g. Maria G.">
+    </div>
+    <button class="btn btn-primary" id="step1-next" onclick="goToStep2()" disabled>Continue →</button>
+  </div>
+
+  <!-- Step 2: Store Info -->
+  <div class="step" id="step-2">
+    <div class="step-label">Step 2 of 4</div>
+    <h2>Store Information</h2>
+    <p>Enter the store's account number or address.</p>
+    <div class="toggle-group">
+      <button class="toggle-btn active" id="toggle-account" onclick="setStoreType('account')">Account #</button>
+      <button class="toggle-btn"        id="toggle-address" onclick="setStoreType('address')">Address</button>
+    </div>
+    <div class="form-group">
+      <label id="store-label">Account Number</label>
+      <input type="text" id="store-input" placeholder="e.g. 10042">
+    </div>
+    <button class="btn btn-primary" id="step2-next" onclick="goToStep3()" disabled>Continue →</button>
+    <button class="btn btn-secondary" onclick="goToStep(1)">← Back</button>
+  </div>
+
+  <!-- Step 3: Camera -->
+  <div class="step" id="step-3">
+    <div class="step-label">Step 3 of 4</div>
+    <h2>Take Freezer Photo</h2>
+    <p>Open the freezer and take a clear photo of the <strong>interior walls and sides</strong>. The AI will check for ice buildup.</p>
+    <div class="camera-wrapper">
+      <label class="camera-label" for="camera-input" id="camera-label">
+        <div class="camera-icon">📷</div>
+        <span>Tap to Take Photo</span>
+        <small>Point at the freezer interior</small>
+      </label>
+      <input type="file" id="camera-input" accept="image/*" capture="environment">
+      <img id="photo-preview" alt="Freezer photo preview">
+      <button class="retake-btn" id="retake-btn" style="display:none" onclick="retakePhoto()">↩ Retake Photo</button>
+    </div>
+    <button class="btn btn-primary" id="step3-submit" onclick="submitCheck()" disabled style="margin-top:20px">Analyze & Submit ✓</button>
+    <button class="btn btn-secondary" onclick="goToStep(2)">← Back</button>
+  </div>
+
+  <!-- Step 4: Loading -->
+  <div class="step" id="step-4">
+    <div class="loading-screen">
+      <div class="spinner"></div>
+      <h3>Analyzing freezer…</h3>
+      <p>AI is inspecting the photo for ice buildup.<br>This usually takes 5–10 seconds.</p>
+    </div>
+  </div>
+
+  <!-- Step 5: Result -->
+  <div class="step" id="step-5">
+    <div class="step-label">Submission Complete</div>
+    <h2>Inspection Result</h2>
+    <div id="result-banner" class="result-banner">
+      <div class="result-icon" id="result-icon"></div>
+      <div>
+        <div class="result-title" id="result-title"></div>
+        <div class="result-sub"  id="result-sub"></div>
+      </div>
+    </div>
+    <div id="ai-notes-box" class="ai-notes" style="display:none"></div>
+    <div class="detail-row"><span class="detail-label">Zone</span><span class="detail-value" id="r-route"></span></div>
+    <div class="detail-row"><span class="detail-label">Store</span><span class="detail-value" id="r-store"></span></div>
+    <div class="detail-row"><span class="detail-label">Ice Severity</span><span class="detail-value" id="r-severity"></span></div>
+    <div class="detail-row"><span class="detail-label">Time</span><span class="detail-value" id="r-time"></span></div>
+    <button class="btn btn-primary" onclick="resetApp()" style="margin-top:24px">＋ Check Another Freezer</button>
+  </div>
+</div>
+
+<script>
+  const ZONES = ['Zone 1','Zone 2','Zone 3','Zone 4','Zone 5','Zone 6','Zone 7','Zone 8','Zone 9'];
+  let state = { route:'', repName:'', storeId:'', storeType:'account', imageData:null, imageType:null };
+
+  // Populate zones — try server first, fall back to hardcoded list
+  function populateZones(zones) {
+    const sel = document.getElementById('route-select');
+    zones.forEach(z => {
+      const o = document.createElement('option');
+      o.value = z; o.textContent = z; sel.appendChild(o);
+    });
+  }
+  fetch('/api/routes').then(r => r.json()).then(populateZones).catch(() => populateZones(ZONES));
+
+  document.getElementById('route-select').addEventListener('change', e => {
+    state.route = e.target.value;
+    document.getElementById('step1-next').disabled = !state.route;
+  });
+  document.getElementById('store-input').addEventListener('input', e => {
+    state.storeId = e.target.value.trim();
+    document.getElementById('step2-next').disabled = !state.storeId;
+  });
+
+  const progressMap = {1:'20%',2:'45%',3:'70%',4:'88%',5:'100%'};
+  function goToStep(n) {
+    document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+    document.getElementById('step-'+n).classList.add('active');
+    document.getElementById('progress-fill').style.width = progressMap[n]||'20%';
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  function goToStep2() { state.repName = document.getElementById('rep-name').value.trim(); goToStep(2); }
+  function goToStep3() { state.storeId = document.getElementById('store-input').value.trim(); goToStep(3); }
+
+  function setStoreType(type) {
+    state.storeType = type;
+    document.getElementById('toggle-account').classList.toggle('active', type==='account');
+    document.getElementById('toggle-address').classList.toggle('active', type==='address');
+    document.getElementById('store-label').textContent = type==='account' ? 'Account Number' : 'Store Address';
+    document.getElementById('store-input').placeholder = type==='account' ? 'e.g. 10042' : 'e.g. 1234 Main St, Houston TX';
+    document.getElementById('store-input').value = '';
+    state.storeId = '';
+    document.getElementById('step2-next').disabled = true;
+  }
+
+  document.getElementById('camera-input').addEventListener('change', async e => {
+    const file = e.target.files[0]; if (!file) return;
+    const compressed = await compressImage(file, 1280);
+    state.imageData = compressed; state.imageType = 'image/jpeg';
+    const preview = document.getElementById('photo-preview');
+    preview.src = compressed; preview.style.display = 'block';
+    document.getElementById('camera-label').style.display = 'none';
+    document.getElementById('retake-btn').style.display = 'inline-block';
+    document.getElementById('step3-submit').disabled = false;
+  });
+
+  function retakePhoto() {
+    state.imageData = null;
+    document.getElementById('photo-preview').style.display = 'none';
+    document.getElementById('camera-label').style.display = 'flex';
+    document.getElementById('retake-btn').style.display = 'none';
+    document.getElementById('step3-submit').disabled = true;
+    document.getElementById('camera-input').value = '';
+  }
+
+  function compressImage(file, maxW=1280) {
+    return new Promise(resolve => {
+      const img = new Image(), url = URL.createObjectURL(file);
+      img.onload = () => {
+        let w=img.width, h=img.height;
+        if (w>maxW) { h=Math.round(maxW*h/w); w=maxW; }
+        const c=document.createElement('canvas'); c.width=w; c.height=h;
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL('image/jpeg',0.82));
+      };
+      img.src=url;
+    });
+  }
+
+  async function submitCheck() {
+    if (!state.imageData) return alert('Please take a photo first.');
+    goToStep(4);
+    try {
+      const resp = await fetch('/api/submit', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ route_name:state.route, store_identifier:state.storeId, store_type:state.storeType, rep_name:state.repName, image_data:state.imageData, image_type:state.imageType })
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error||'Server error');
+      showResult(data.analysis);
+    } catch(err) {
+      goToStep(3);
+      alert('Submission failed: '+err.message+'\n\nMake sure the server is running.');
+    }
+  }
+
+  function showResult(analysis) {
+    const banner=document.getElementById('result-banner');
+    banner.classList.remove('ice','clean','unknown');
+    const icon=document.getElementById('result-icon'), title=document.getElementById('result-title'), sub=document.getElementById('result-sub'), notes=document.getElementById('ai-notes-box');
+    if (analysis.has_ice_buildup===null) {
+      banner.classList.add('unknown'); icon.textContent='⚠️';
+      title.textContent='Manual Review Required'; sub.textContent='AI could not analyze clearly. Please re-submit or flag for manual check.';
+    } else if (analysis.has_ice_buildup) {
+      banner.classList.add('ice'); icon.textContent='🧊';
+      title.textContent='Ice Buildup Detected'; sub.textContent='This freezer needs to be defrosted and cleaned.';
+    } else {
+      banner.classList.add('clean'); icon.textContent='✅';
+      title.textContent='Freezer is Clean'; sub.textContent='No ice buildup detected. Good condition!';
+    }
+    if (analysis.notes) { notes.textContent='🤖 AI Notes: '+analysis.notes; notes.style.display='block'; } else notes.style.display='none';
+    const sev=analysis.severity||'none';
+    document.getElementById('r-severity').innerHTML=`<span class="severity-pill sev-${sev==='unknown'?'unknown':sev}">${sev.charAt(0).toUpperCase()+sev.slice(1)}</span>`;
+    document.getElementById('r-route').textContent=state.route;
+    document.getElementById('r-store').textContent=state.storeId+(state.storeType==='address'?' (address)':' (acct #)');
+    document.getElementById('r-time').textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    goToStep(5);
+  }
+
+  function resetApp() {
+    state.storeId=''; state.imageData=null;
+    document.getElementById('store-input').value='';
+    document.getElementById('step2-next').disabled=true;
+    document.getElementById('photo-preview').style.display='none';
+    document.getElementById('camera-label').style.display='flex';
+    document.getElementById('retake-btn').style.display='none';
+    document.getElementById('step3-submit').disabled=true;
+    document.getElementById('camera-input').value='';
+    goToStep(2);
+  }
+</script>
+</body>
+</html>
